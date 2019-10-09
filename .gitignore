@@ -102,3 +102,5 @@ MAKELOG
 /misc/zerofree
 /misc/Makefile
 /misc/autom4te.cache
+debian-release-10.gpg
+sendgridapi

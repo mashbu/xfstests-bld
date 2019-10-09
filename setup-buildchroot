@@ -15,7 +15,7 @@ DEBIAN_RELEASE=
 DEBIAN_RELEASE_DEFAULT=buster
 DEBIAN_PORTS_RELEASE_DEFAULT=unstable
 
-DEBIAN_KEYRING=
+DEBIAN_KEYRING=$HOME/fstests/debian-release-10.gpg
 DEBIAN_KEYRING_DEFAULT=/usr/share/keyrings/debian-archive-keyring.gpg
 DEBIAN_PORTS_KEYRING_DEFAULT=/usr/share/keyrings/debian-ports-archive-keyring.gpg
 
