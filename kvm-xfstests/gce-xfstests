@@ -385,6 +385,11 @@ case "$1" in
 	       --zone $(get_gce_zone "$2")
 	exit 0
 	;;
+    scp)
+  gcloud compute --project "$GCE_PROJECT" -q scp "$2" root@"$3":~ \
+         --zone $(get_gce_zone "$3")
+  exit 0
+  ;;  
     console)
 	gcloud compute --project "$GCE_PROJECT" -q instances \
 	       get-serial-port-output "$2" --zone $(get_gce_zone "$2")
@@ -513,6 +518,21 @@ case "$1" in
 	RUN_ON_LTM="yes"
 	GCE_USER="ltm"
 	;;
+    launch-bldsrv)
+  shift
+  if test "$GCE_IMAGE_PROJECT" != "$GCE_PROJECT"
+  then
+      echo "The gce-xfstests build server requires that you build the gce-xfstests image"
+      echo "and put it in your own project."
+      echo "Ensure that the GCE_IMAGE_PROJECT flag is set equal to GCE_PROJECT"
+      echo "in your ~/.config/gce-xfstests file.\n"
+      echo "See the instructions on building an image:"
+      echo "\thttps://github.com/tytso/xfstests-bld/blob/master/Documentation/gce-xfstests.md#creating-a-new-gce-test-appliance-image"
+      exit 1
+  fi
+  "$DIR/util/gce-launch-bldsrv"
+  exit $?
+  ;;
 esac
 
 ORIG_CMDLINE="$*"
