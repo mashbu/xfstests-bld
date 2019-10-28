@@ -65,7 +65,7 @@ ROOT_FS="xfstests"
 IMAGE_FLAG="--image-family"
 
 ARG="gs_bucket=$GS_BUCKET serial-port-enable=true"
-ARG="$ARG gce_xfs_ltm=YES"
+ARG="$ARG gce_xfs_bldsrv=YES"
 if test -n "$TZ" ; then
     ARG="$ARG fstesttz=$TZ"
 fi
