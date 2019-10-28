@@ -2,6 +2,9 @@ disks
 logs
 baseline.*
 *~
-.ltm_instance
+
+.bldsrv_cookie
+.bldsrv_instance
 .gce_xfstests_cert.pem
+.ltm_instance
 .ltm_cookie

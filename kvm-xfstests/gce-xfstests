@@ -2,6 +2,7 @@
 
 XFSTESTS_FLAVOR=gce
 RUN_ON_LTM=
+RUN_ON_BLDSRV=
 t=$(echo ${XFSTESTS_FLAVOR}_xfstests_dir | tr "[:lower:]" "[:upper:]")
 eval DIR="\$$t"
 if test -z "$DIR"
@@ -389,7 +390,7 @@ case "$1" in
   gcloud compute --project "$GCE_PROJECT" -q scp "$2" root@"$3":~ \
          --zone $(get_gce_zone "$3")
   exit 0
-  ;;  
+  ;;
     console)
 	gcloud compute --project "$GCE_PROJECT" -q instances \
 	       get-serial-port-output "$2" --zone $(get_gce_zone "$2")
@@ -507,17 +508,6 @@ case "$1" in
 	"$DIR/util/gce-launch-ltm"
 	exit $?
 	;;
-    ltm)
-	shift
-	if [ ! -f "$DIR/.ltm_instance" ]; then
-	    echo "The .ltm_instance file is not present! Please launch the LTM before"
-	    echo "using this option."
-	    exit 1
-	fi
-	NO_ACTION=": "
-	RUN_ON_LTM="yes"
-	GCE_USER="ltm"
-	;;
     launch-bldsrv)
   shift
   if test "$GCE_IMAGE_PROJECT" != "$GCE_PROJECT"
@@ -532,6 +522,28 @@ case "$1" in
   fi
   "$DIR/util/gce-launch-bldsrv"
   exit $?
+  ;;
+    ltm)
+  shift
+  if [ ! -f "$DIR/.ltm_instance" ]; then
+      echo "The .ltm_instance file is not present! Please launch the LTM before"
+      echo "using this option."
+      exit 1
+  fi
+  NO_ACTION=": "
+  RUN_ON_LTM="yes"
+  GCE_USER="ltm"
+  ;;
+    build)
+  shift
+  if [ ! -f "$DIR/.bldsrv_instance" ]; then
+      echo "The .bldsrv_instance file is not present! Please launch the build server before"
+      echo "using this option."
+      exit 1
+  fi
+  NO_ACTION=": "
+  RUN_ON_BLDSRV="yes"
+  GCE_USER="bldsrv"
   ;;
 esac
 
@@ -885,6 +897,11 @@ if test -n "$RUN_ON_LTM"; then
 else
     echo "Launching $INSTANCE using $GCE_MACHTYPE..."
     # echo "Using ARG: $ARG"
+fi
+
+if test -n "$RUN_ON_BLDSRV"; then
+    . "$DIR/util/gce-bldsrv-funcs"
+    send_to_bldsrv $ORIG_CMDLINE_B64
 fi
 
 $NO_ACTION gcloud compute --project "$GCE_PROJECT" \
