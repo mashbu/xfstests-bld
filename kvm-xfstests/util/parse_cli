@@ -184,6 +184,17 @@ validate_config_name()
     fi
 }
 
+validate_commit_name()
+{
+    if git ls-remote $1 | grep -q "$2"; then
+      echo "Repository found"
+    else
+  		echo -e "No commit or tag with this name: $1\n"
+  		print_help
+  		exit 1
+    fi
+}
+
 if flavor_in gce && test -n "$GCE_KERNEL" ; then
     KERNEL="$GCE_KERNEL"
 fi
@@ -529,6 +540,7 @@ while (( $# >= 1 )); do
 	    supported_flavors gce
 	    COMMIT="$1"
       REPO="$GIT_REPO"
+      validate_commit_name $REPO $COMMIT
 	    ;;
 	--testrunid) shift
 	    supported_flavors gce
