@@ -1,0 +1,16 @@
+#!/bin/bash
+
+BUILDS=/repositories
+GIT_REPO=$1
+KERNEL_DIR=$2
+
+cd $BUILDS
+if [ ! -d "$KERNEL_DIR" ]
+then
+  echo "Cloning $GIT_REPO"
+  git clone $GIT_REPO $KERNEL_DIR
+fi
+
+echo "Updating $GIT_REPO"
+cd $KERNEL_DIR
+git pull

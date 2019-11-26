@@ -22,6 +22,7 @@ import base64
 import binascii
 import logging
 import os
+from subprocess import call
 import traceback
 import flask
 import flask_login
@@ -179,20 +180,35 @@ def gce_xfstests():
     opts = None
 
   try:
-    test_run = TestRunManager(base64.decodestring(cmd_in_base64), opts)
-    run_info = test_run.get_info()
-    test_run.run()
-  except:
-    logging.error('Did not successfully run test:')
-    logging.error(traceback.format_exc())
-    return flask.jsonify({'status': False})
+    gce_xfstests_cmd = "gce-xfstests launch-bldsrv"
+    logging.info('Starting build server')
+    f = open(self.cmdlog_file_path, 'w')
+    logging.info('Calling command %s', str(gce_xfstests_cmd)
+    returned = call(gce_xfstests_cmd, stdout=f, stderr=f)
+    f.close()
+    logging.info('Command returned %s', returned)
+    if not returned:
+        logging.warning("Couldn't launch build server")
+        return flask.jsonify({'status': False})
 
-  if not run_info or run_info.keys() == 0:
-    return flask.jsonify({'status': False})
+  except:
+    logging.warning("Couldn't launch build server")
+    flask.abort(400)
+
+  # try:
+  #   test_run = TestRunManager(base64.decodestring(cmd_in_base64), opts)
+  #   run_info = test_run.get_info()
+  #   test_run.run()
+  # except:
+  #   logging.error('Did not successfully run test:')
+  #   logging.error(traceback.format_exc())
+  #   return flask.jsonify({'status': False})
+  #
+  # if not run_info or run_info.keys() == 0:
+  #   return flask.jsonify({'status': False})
 
   return flask.jsonify({'status': True,
                         'info': run_info})
 
 if __name__ == '__main__':
   app.run(host='0.0.0.0')
-

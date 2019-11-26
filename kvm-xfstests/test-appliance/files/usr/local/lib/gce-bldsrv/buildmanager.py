@@ -26,6 +26,7 @@ exited should have uploaded the kernel build to the GCS bucket.
 """
 from datetime import datetime
 import fcntl
+import hashlib
 import logging
 from multiprocessing import Process
 import os
@@ -60,7 +61,6 @@ class BuildManager(object):
     self.orig_cmd = orig_cmd.strip()
     self.log_dir_path = BLDSRV.build_log_dir + '%s/' % build_id
     self.log_file_path = self.log_dir_path + 'run.log'
-    self.kernel_build_filename = 'bzImagexxx'
 
     BLDSRV.create_log_dir(self.log_dir_path)
     logging.info('Created new build with id %s', self.id)
@@ -73,8 +73,14 @@ class BuildManager(object):
       self.commit = opts['commit_id'].strip()
     if opts and 'git_repo' in opts:
       self.repository = opts['git_repo'].strip()
+    self.build_dir = make_kernel_dir(self.repository)
+    self.build_path = BLDSRV.repo_cache_path + self.build_dir
+    self.kernel_build = self.build_path + BLDSRV.image_path
+    self.kernel_build_filename = BLDSRV.image_name
 
-    self.kbuild = Kbuild(self.repository, self.commit, self.id,
+    logging.info('Cloning repository to %s', self.build_path)
+
+    self.kbuild = Kbuild(self.repository, self.commit, self.build_dir, self.id,
       self.log_dir_path)
 
   def run(self):
@@ -126,18 +132,11 @@ class BuildManager(object):
     """
     logging.info('Entered start()')
     self.kbuild.run()
-    #subprocess.check_call(['/usr/local/lib/buildkernel.sh', self.repository, self.commit])
-    # process = subprocess.Popen(['/usr/local/lib/buildkernel.sh', self.repository, self.commit],
-    #   stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-    # returncode = process.wait()
-    # print('buildkernel.sh return with exit code {0}'.format(returncode))
-    # print(process.stdout.read())
     if not self.kbuild.process:
       logging.warning('Build %s failed to start', self.id)
-      logging.warning('Build was %s commit=%s', self.repository, self.commit)
+      logging.warning('Building %s from commit %s', self.repository, self.commit)
     else:
         logging.info('Started build %s', self.id)
-    logging.info('CMDLINE: %s', str(self.orig_cmd))
 
     return
 
@@ -151,32 +150,50 @@ class BuildManager(object):
     """Completion method of the build manager after build is started.
     """
     logging.info('Entered finish()')
-    # self.__upload_build()
+    self.__upload_build()
     self.__cleanup()
-    logging.info('finished.')
+    logging.info('Done.')
     return
 
   def __upload_build(self):
     """uploads kernel build to GS bucket.
     """
+    if os.path.isfile(self.kernel_build):
+        storage_client = storage.Client()
+        bucket = storage_client.lookup_bucket(self.gs_bucket)
 
-    storage_client = storage.Client()
-    bucket = storage_client.lookup_bucket(self.gs_bucket)
-
-    with open('%s' % (self.kernel_build_filename), 'r') as f:
-      bucket.blob('$HOME/linux/arch/x86/boot/bzImage').upload_from_file(f)
-
+        with open('%s' % (self.kernel_build), 'r') as f:
+          bucket.blob(self.kernel_build_filename).upload_from_file(f)
+    else:
+        logging.info('Could not find bzImage to upload.')
 
   def __cleanup(self):
     """Cleanup to be done after the build is finished.
+
+    Delete the bzImage.
     """
     logging.info('Entered cleanup')
-
+    if os.path.isfile(self.kernel_build):
+        os.remove(self.kernel_build)
     logging.info('Finished cleanup')
     return
 
 
 ### end class BuildManager
+
+def make_kernel_dir(repository):
+  """Create a unique directory name for the repository being cloned
+
+  Need to create a unique name for each repository so that future
+  clones of the same repository are copied to the same directory.
+
+  Unique name created using md5 hash of the repository url
+
+  Returns:
+    kernel_dir: a string representing the directory name
+  """
+  kernel_dir = hashlib.md5(repository.encode()).hexdigest()
+  return kernel_dir
 
 def get_datetime_build_id():
   curtime = datetime.now()
