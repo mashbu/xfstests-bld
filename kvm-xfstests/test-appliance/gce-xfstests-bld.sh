@@ -332,7 +332,7 @@ logger -s "xfstests GCE appliance build completed (build instance id $ID)"
 rm -rf $GCE_STATE_DIR
 
 # Add linux repository for faster clones
-git clone --mirror git://github.com/torvalds/linux /root/.gitcaches/linux.reference
+# git clone --mirror git://github.com/torvalds/linux /root/.gitcaches/linux.reference
 
 # Set label
 /sbin/tune2fs -L xfstests-root /dev/sda1
