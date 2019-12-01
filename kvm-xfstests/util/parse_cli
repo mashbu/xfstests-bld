@@ -195,6 +195,18 @@ validate_commit_name()
     fi
 }
 
+copy_config()
+{
+    if test -e $1
+    then
+    gsutil cp $1 "gs://$GS_BUCKET/build_config"
+    else
+  		echo -e "Could not find: $1\n"
+  		print_help
+  		exit 1
+    fi
+}
+
 if flavor_in gce && test -n "$GCE_KERNEL" ; then
     KERNEL="$GCE_KERNEL"
 fi
@@ -214,6 +226,7 @@ blktests
 bucket-subdir:
 cache:
 commit:
+config:
 cpu-type:
 email:
 gce-network:
@@ -541,6 +554,11 @@ while (( $# >= 1 )); do
 	    COMMIT="$1"
       REPO="$GIT_REPO"
       validate_commit_name $REPO $COMMIT
+	    ;;
+  --config) shift
+	    supported_flavors gce
+	    BUILD_CONFIG="$1"
+      copy_config $BUILD_CONFIG
 	    ;;
 	--testrunid) shift
 	    supported_flavors gce
